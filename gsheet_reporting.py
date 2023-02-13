@@ -10,6 +10,7 @@ import pandas as pd
 from gspread.exceptions import APIError
 from oauth2client.service_account import ServiceAccountCredentials
 import zd
+import threading
 
 
 class Reporter():
@@ -635,9 +636,9 @@ class Reporter():
 
 if __name__ == '__main__':
     reporter = Reporter()
-    reporter.tradesheet_to_positions()
+    # reporter.tradesheet_to_positions()
+    # reporter.update_expired_pnl()
     reporter.update_pnl(reporter.get_prices_from_broker())
-    reporter.update_expired_pnl()
     reporter.update_live_sheet_pnl_from_positions()
 
 

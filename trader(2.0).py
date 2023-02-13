@@ -464,5 +464,58 @@ def execute_default():
         return False
     execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, max_buyprice, min_sellprice, max_sellprice)
 
+
+def check_if_executed_today():
+    try:
+        # if today is sunday or saturday, return true
+        if datetime.datetime.today().weekday() in [5, 6]:
+            return True
+        with open('order_ids.txt', 'r') as f:
+            order_ids = f.read()
+        last_orders = order_ids.split('\n')[-2].split(',')
+        buy_order_id = last_orders[0]
+        sell_order_id = last_orders[1]
+        # match the first 6 digits of the order id with the current date
+        today = datetime.datetime.now().strftime("%y%m%d")
+        if buy_order_id.startswith(today) and sell_order_id.startswith(today):
+            return True
+    except:
+        print('Error in reading order ids')
+        return False
+
+
 if __name__ == '__main__':
+    # check if the script has already been executed today
+    reporter = gsheet_reporting.Reporter()
+    reporter.update_pnl(reporter.get_prices_from_broker())
+    reporter.update_expired_pnl()
+    reporter.update_live_sheet_pnl_from_positions()
+    if not check_if_executed_today():
+        # decide a random time to execute between now and 2:30 PM
+        seconds_till_15 = int((datetime.datetime.now().replace(hour=15, minute=00, second=0, microsecond=0) - datetime.datetime.now()).total_seconds())
+        if seconds_till_15 > 0:
+            random_time = random.randint(0, int(seconds_till_15))
+            execution_time = datetime.datetime.now() + datetime.timedelta(seconds=random_time)
+            logger.info("Execution time: " + str(execution_time))
+        else:
+            logger.error("Not enough time to execute")
+
+    while True:
+        if datetime.datetime.now().hour == execution_time.hour and datetime.datetime.now().minute in range(execution_time.minute-1, execution_time.minute+1):
+            if not check_if_executed_today():
+                execute_default()
+                time.sleep(5)
+                reporter.update_pnl(reporter.get_prices_from_broker())
+                reporter.update_live_sheet_pnl_from_positions()
+                time.sleep(60)
+
+        # if the time is divisible by 5, update the pnl
+        if datetime.datetime.now().minute % 5 == 0:
+            reporter.update_pnl(reporter.get_prices_from_broker())
+            reporter.update_live_sheet_pnl_from_positions()
+
+            time.sleep(55)
+
+
+
     execute_default()
