@@ -58,9 +58,8 @@ file_handler = logging.FileHandler(os.path.join(
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-
-
 reporter = gsheet_reporting.Reporter()
+
 
 def login():
     if os.path.isfile("access_token.txt") and os.path.getmtime("access_token.txt") > time.time() - 3600:
@@ -302,6 +301,7 @@ def check_available_margin(kite):
         logger.error("Could not check available cash and margin: {}".format(traceback.format_exc()))
         return False
 
+
 def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, max_buyprice, min_sellprice,
                    max_sellprice):
     # get buy and sell options, pick one buy and one sell at random
@@ -329,7 +329,8 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
         sell_options = [option for option in sell_options if option['expiry'] == buy_option['expiry']]
         sell_option = random.choice(sell_options)
         # pull new quotes for the selected buy option
-        logger.info("Selected buy option: %s" % buy_option['tradingsymbol'] + ' and sell option: %s' % sell_option['tradingsymbol'])
+        logger.info("Selected buy option: %s" % buy_option['tradingsymbol'] + ' and sell option: %s' % sell_option[
+            'tradingsymbol'])
         buy_quotes = kite.quote(['NFO:' + buy_option['tradingsymbol']])
         # get the best bid and best ask for the selected buy option
         best_bid = buy_quotes['NFO:' + buy_option['tradingsymbol']]['depth']['buy'][0]['price']
@@ -345,8 +346,10 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
                                         price=limit_price, variety=kite.VARIETY_REGULAR)
         # check the status of fill, and keep updating limit price according to the new mark price every 15 seconds
         # update log with order ID, limit price, best bid, best ask, nifty price
-        instrument_name = buy_option['name'] + ' ' + buy_option['expiry'].strftime("%d %b %Y").upper() + ' ' + str(int(buy_option['strike'])) + buy_option['instrument_type'].upper()
-        logger.info("Inititated buy order for " + instrument_name + ' at ' + str(limit_price) + ' with order id ' + str(buy_order_id))
+        instrument_name = buy_option['name'] + ' ' + buy_option['expiry'].strftime("%d %b %Y").upper() + ' ' + str(
+            int(buy_option['strike'])) + buy_option['instrument_type'].upper()
+        logger.info("Inititated buy order for " + instrument_name + ' at ' + str(limit_price) + ' with order id ' + str(
+            buy_order_id))
         logger.info("Best bid: " + str(best_bid) + ", Best ask: " + str(best_ask))
         print(instrument_name)
         filled = 0
@@ -377,19 +380,22 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
                 # get the new mark price
                 new_mark_price = kite.quote(['NFO:' + buy_option['tradingsymbol']])['NFO:' + buy_order['tradingsymbol']]
                 depth = new_mark_price['depth']
-                new_mark_price = (depth['buy'][0]['price']*0.7 + depth['sell'][0]['price']*0.3)
+                new_mark_price = (depth['buy'][0]['price'] * 0.7 + depth['sell'][0]['price'] * 0.3)
                 # new_mark_price = (new_mark_price['depth']['buy'][0]['price'] + new_mark_price['depth']['sell'][0][
                 #     'price']) / 2
                 new_mark_price = int(new_mark_price * 10) / 10
                 # update the limit price
                 kite.modify_order(order_id=buy_order_id, variety=kite.VARIETY_REGULAR, price=new_mark_price)
-                logger.info("Updated limit price to " + str(new_mark_price) + ' Current bid ask spread: ' + str(buy_option['bid_ask_spread']))
-                print("Waiting for the buy order to fill, bid_ask_spread: ", buy_option['bid_ask_spread'], "new mark price: ", new_mark_price)
+                logger.info("Updated limit price to " + str(new_mark_price) + ' Current bid ask spread: ' + str(
+                    buy_option['bid_ask_spread']))
+                print("Waiting for the buy order to fill, bid_ask_spread: ", buy_option['bid_ask_spread'],
+                      "new mark price: ", new_mark_price)
                 time.sleep(15)
         # send limit sell order for the best offer on sell option when the buy order is filled
         new_offer_price = \
-        kite.quote(['NFO:' + sell_option['tradingsymbol']])['NFO:' + sell_option['tradingsymbol']]['depth']['sell'][0][
-            'price']
+            kite.quote(['NFO:' + sell_option['tradingsymbol']])['NFO:' + sell_option['tradingsymbol']]['depth']['sell'][
+                0][
+                'price']
         sell_order_id = kite.place_order(tradingsymbol=sell_option['tradingsymbol'], exchange=kite.EXCHANGE_NFO,
                                          transaction_type=kite.TRANSACTION_TYPE_SELL,
                                          quantity=sell_option['lot_size'] * multiplier,
@@ -398,9 +404,16 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
 
         # check the status of fill, and keep updating limit price according to the new offer price every 15 seconds
         # update log with order ID, limit price, best bid, best ask, nifty price
-        instrument_name = sell_option['name'] + ' ' + sell_option['expiry'].strftime("%d %b %Y").upper() + ' ' + str(int(sell_option['strike'])) + sell_option['instrument_type'].upper()
-        logger.info("Initiated sell order for " + instrument_name + ' at ' + str(new_offer_price) + ' with order id ' + str(sell_order_id))
-        logger.info("Best bid: " + str(kite.quote(['NFO:' + sell_option['tradingsymbol']])['NFO:' + sell_option['tradingsymbol']]['depth']['buy'][0]['price']) + ", Best ask: " + str(kite.quote(['NFO:' + sell_option['tradingsymbol']])['NFO:' + sell_option['tradingsymbol']]['depth']['sell'][0]['price']))
+        instrument_name = sell_option['name'] + ' ' + sell_option['expiry'].strftime("%d %b %Y").upper() + ' ' + str(
+            int(sell_option['strike'])) + sell_option['instrument_type'].upper()
+        logger.info(
+            "Initiated sell order for " + instrument_name + ' at ' + str(new_offer_price) + ' with order id ' + str(
+                sell_order_id))
+        logger.info("Best bid: " + str(
+            kite.quote(['NFO:' + sell_option['tradingsymbol']])['NFO:' + sell_option['tradingsymbol']]['depth']['buy'][
+                0]['price']) + ", Best ask: " + str(
+            kite.quote(['NFO:' + sell_option['tradingsymbol']])['NFO:' + sell_option['tradingsymbol']]['depth']['sell'][
+                0]['price']))
         print(instrument_name, "sell order placed at ", new_offer_price)
         filled = 0
         while filled == 0:
@@ -417,8 +430,8 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
                 # trigger gsheet update
                 # sample order_details = {'instrument':'SBIN', 'qty':100, 'entry_timestamp':datetime.datetime.now().strftime("%Y-%b-%d %HH:%MM"), 'expiry':datetime.datetime.now().strftime("%Y-%b-%d %HH:%MM"), 'fill_price':100}
                 order_details = {'instrument': instrument_name, 'qty': sell_option['lot_size'] * multiplier,
-                                    'entry_timestamp': trade_time, 'expiry': sell_option['expiry'],
-                                    'fill_price': fill_price}
+                                 'entry_timestamp': trade_time, 'expiry': sell_option['expiry'],
+                                 'fill_price': fill_price}
                 try:
                     reporter.sell_order_filled(order_details)
                 except:
@@ -433,8 +446,10 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
                     'NFO:' + sell_order['tradingsymbol']]['depth']['sell'][0]['price']
                 # update the limit price
                 kite.modify_order(order_id=sell_order_id, variety=kite.VARIETY_REGULAR, price=new_offer_price)
-                logger.info("Updated limit price to " + str(new_offer_price) + ' Current bid ask spread: ' + str(sell_option['bid_ask_spread']))
-                print("Waiting for the sell order to fill, bid_ask_spread: ", sell_option['bid_ask_spread'], "new offer price: ", new_offer_price)
+                logger.info("Updated limit price to " + str(new_offer_price) + ' Current bid ask spread: ' + str(
+                    sell_option['bid_ask_spread']))
+                print("Waiting for the sell order to fill, bid_ask_spread: ", sell_option['bid_ask_spread'],
+                      "new offer price: ", new_offer_price)
                 time.sleep(15)
         # if the sell order is filled, report
         logger.info("Trade executed successfully")
@@ -445,6 +460,7 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
     else:
         logger.error("Could not execute orders")
         return False
+
 
 def execute_default():
     api_key = read_api_key()
@@ -462,7 +478,8 @@ def execute_default():
     if not check_available_margin(kite):
         logger.error("Not enough available margin")
         return False
-    execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, max_buyprice, min_sellprice, max_sellprice)
+    execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, max_buyprice, min_sellprice,
+                   max_sellprice)
 
 
 def check_if_executed_today():
@@ -492,7 +509,8 @@ if __name__ == '__main__':
     reporter.update_live_sheet_pnl_from_positions()
     if not check_if_executed_today():
         # decide a random time to execute between now and 2:30 PM
-        seconds_till_15 = int((datetime.datetime.now().replace(hour=15, minute=00, second=0, microsecond=0) - datetime.datetime.now()).total_seconds())
+        seconds_till_15 = int((datetime.datetime.now().replace(hour=15, minute=00, second=0,
+                                                               microsecond=0) - datetime.datetime.now()).total_seconds())
         if seconds_till_15 > 0:
             random_time = random.randint(0, int(seconds_till_15))
             execution_time = datetime.datetime.now() + datetime.timedelta(seconds=random_time)
@@ -501,21 +519,38 @@ if __name__ == '__main__':
             logger.error("Not enough time to execute")
 
     while True:
-        if datetime.datetime.now().hour == execution_time.hour and datetime.datetime.now().minute in range(execution_time.minute-1, execution_time.minute+1):
-            if not check_if_executed_today():
-                execute_default()
-                time.sleep(5)
-                reporter.update_pnl(reporter.get_prices_from_broker())
-                reporter.update_live_sheet_pnl_from_positions()
-                time.sleep(60)
-
+        if 'execution_time' in locals():
+            if datetime.datetime.now().hour == execution_time.hour and datetime.datetime.now().minute in range(
+                    execution_time.minute - 1, execution_time.minute + 1):
+                logger.info("Executing orders")
+                if not check_if_executed_today():
+                    try:
+                        execute_default()
+                    except:
+                        logger.error("Error in executing orders, Attempting 2 of 3")
+                        try:
+                            execute_default()
+                        except:
+                            logger.error("Error in executing orders, Attempting 3 of 3")
+                            try:
+                                execute_default()
+                            except:
+                                logger.error("Error in executing orders, Aborting")
+                    time.sleep(5)
+                    reporter.update_pnl(reporter.get_prices_from_broker())
+                    reporter.update_live_sheet_pnl_from_positions()
+                    time.sleep(60)
+                else:
+                    logger.info("Already executed today")
         # if the time is divisible by 5, update the pnl
         if datetime.datetime.now().minute % 5 == 0:
-            reporter.update_pnl(reporter.get_prices_from_broker())
-            reporter.update_live_sheet_pnl_from_positions()
+            try:
+                reporter.update_pnl(reporter.get_prices_from_broker())
+                reporter.update_live_sheet_pnl_from_positions()
+            except Exception as e:
+                logger.error("Error in updating pnl, reinitiating gsheet reporter")
+                logger.error(e)
+                import gsheet_reporting
 
-            time.sleep(55)
-
-
-
-    execute_default()
+                reporter = gsheet_reporting.Reporter()
+            time.sleep(50)

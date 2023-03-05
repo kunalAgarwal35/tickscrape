@@ -349,7 +349,7 @@ class Reporter():
         return dict(zip(expired_instruments,prices))
 
     def update_expired_pnl(self):
-        self.logger.info('Updating expired pnl')
+        self.logger.info('Updating Booked pnl')
         expired_prices = self.get_expired_prices()
         self.update_pnl(expired_prices)
 
@@ -363,6 +363,8 @@ class Reporter():
         For each spread, it gets the P/L of its components, and then adds them up to get the P/L of the spread
         It then updates the P/L column in the Live sheet, updates the merged cell I1:J2 to Updated at: <current time> and exits
         '''
+        self.logger.info('Updating Open pnl')
+
         sheet_name = 'Positions'
         try:
             worksheet = self.client.open(self.sheet_name).worksheet(sheet_name)
@@ -633,13 +635,46 @@ class Reporter():
                     elif oput == 2:
                         print('Not enough data on {}'.format(date))
 
+    def get_open_max_loss_and_days_to_expiry(self):
+        '''
+        This function returns the max loss of open positions
+        '''
+        self.logger.info('Getting open max loss')
+        # load live sheet
+        sheet_name = 'Live'
+        try:
+            worksheet = self.client.open(self.sheet_name).worksheet(sheet_name)
+        except APIError as e:
+            self.logger.error('Error in updating pnl: {}'.format(e), '\nRetrying in 60 Seconds')
+            time.sleep(60)
+            self.get_open_max_loss()
+        # get all values
+        dataframe = worksheet.get_all_values()
+        # split lists at the first empty element
+        dataframe = self.clean_lists(dataframe)
+        # convert to dataframe
+        dataframe = pd.DataFrame(dataframe[2:], columns=dataframe[1])
+        # convert to float
+        dataframe['Max Loss'] = dataframe['Max Loss'].astype(float)
+        # add expiry date and time column
+        dataframe['Expiry'] = [datetime.datetime.strptime((' ').join(x.split(' ')[1:4]), '%d %b %Y') for x in dataframe['Instrument']]
+        # add days to expiry column
+        dataframe['Days to Expiry'] = [(x - datetime.datetime.now()).days for x in dataframe['Expiry']]
+        dataframe = dataframe[dataframe['Days to Expiry'] > 0]
+        # get max loss
+        dataframe['Max Loss'] = dataframe['Max Loss'].astype(float)
+        max_loss = int(dataframe['Max Loss'].sum())
+        min_days_to_expiry = dataframe['Days to Expiry'].min()
+        average_loss = int(dataframe['Max Loss'].mean())
+        return max_loss, average_loss, min_days_to_expiry
+
 
 if __name__ == '__main__':
     reporter = Reporter()
     # reporter.tradesheet_to_positions()
     # reporter.update_expired_pnl()
-    reporter.update_pnl(reporter.get_prices_from_broker())
-    reporter.update_live_sheet_pnl_from_positions()
+    # reporter.update_pnl(reporter.get_prices_from_broker())
+    # reporter.update_live_sheet_pnl_from_positions()
 
 
     # reporter.tradesheet_to_positions()
