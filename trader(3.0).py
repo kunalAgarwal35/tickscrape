@@ -462,7 +462,7 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
         logger.error("Could not execute orders")
         return False
 
-def ledger_live_fixed_risk(max_loss, avg_max_loss_per_position, days_to_expiry, max_loss_limit=500000, natd=4):
+def ledger_live_fixed_risk(max_loss, avg_max_loss_per_position, days_to_expiry, max_loss_limit=750000, natd=4):
     if max_loss > max_loss_limit:
         return 0
     else:
@@ -532,7 +532,9 @@ if __name__ == '__main__':
     reporter.update_expired_pnl()
     reporter.update_live_sheet_pnl_from_positions()
     max_loss, average_loss, min_days_to_expiry = reporter.get_open_max_loss_and_days_to_expiry()
-
+    print("Max loss: ", max_loss, "Average loss: ", average_loss, "Min days to expiry: ", min_days_to_expiry)
+    logger.info("Max loss: " + str(max_loss) + " Average loss: " + str(average_loss) + " Min days to expiry: " + str(
+        min_days_to_expiry))
     natd = 4
     seconds_till_15 = int((datetime.datetime.now().replace(hour=15, minute=00, second=0,
                                                            microsecond=0) - datetime.datetime.now()).total_seconds())
@@ -543,7 +545,7 @@ if __name__ == '__main__':
             execution_time = datetime.datetime.now() + datetime.timedelta(seconds=random_time)
             logger.info("Execution time "+ str(i) + ': ' + str(execution_time))
             # check with risk manager if the trade is allowed
-            if ledger_live_fixed_risk(max_loss, average_loss, min_days_to_expiry, natd=natd):
+            if ledger_live_fixed_risk(max_loss, average_loss, min_days_to_expiry, natd=natd, max_loss_limit=750000):
                 execution_times.append(execution_time)
                 logger.info("Execution time " + str(i) + ' allowed')
             else:
@@ -560,22 +562,24 @@ if __name__ == '__main__':
                     logger.info("Executing orders")
                     try:
                         execute_default()
+                        # remove the execution time from the list
+                        execution_times.remove(execution_time)
                     except:
                         logger.error("Error in executing orders, Attempting 2 of 3")
                         try:
                             execute_default()
+                            execution_times.remove(execution_time)
                         except:
                             logger.error("Error in executing orders, Attempting 3 of 3")
                             try:
                                 execute_default()
+                                execution_times.remove(execution_time)
                             except:
                                 logger.error("Error in executing orders, Aborting")
                     time.sleep(5)
                     reporter.update_pnl(reporter.get_prices_from_broker())
                     reporter.update_live_sheet_pnl_from_positions()
                     time.sleep(60)
-                else:
-                    logger.info("Already executed today")
         # if the time is divisible by 5, update the pnl
         if datetime.datetime.now().minute % 5 == 0:
             try:
