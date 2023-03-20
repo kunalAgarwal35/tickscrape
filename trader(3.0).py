@@ -21,6 +21,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 import gsheet_reporting
 from update_chromedriver import main as update_chromedriver
 import numpy as np
+from zd import login
 
 config = json.load(open("config.json", "r"))
 
@@ -62,77 +63,76 @@ logger.addHandler(file_handler)
 reporter = gsheet_reporting.Reporter()
 
 
-def login():
-    if os.path.isfile("access_token.txt") and os.path.getmtime("access_token.txt") > time.time() - 3600:
-        with open("access_token.txt", "r") as f:
-            access_token = json.loads(f.read())
-        return access_token
-
-    update_chromedriver(".", False)
-    credentials = read_credentials()
-    api_key = read_api_key()
-
-    kite = kiteconnect.KiteConnect(api_key=api_key.get("api_key"))
-    options = ChromeOptions()
-    # start headed browser
-    # options.add_argument("--start-maximized")
-    options.add_argument("--headless")
-    options.add_argument("--log-level=NONE")
-    driver = webdriver.Chrome(options=options)
-    driver.maximize_window()
-    driver.get(kite.login_url())
-    xpaths = {
-        "username": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[1]/input",
-        "password": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[2]/input",
-        "login": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[4]/button",
-        "totp": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[2]/input",
-        "click": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[3]/button"
-    }
-
-    # username = driver.find_element("xpath", xpaths["username"])
-    username = get_element(driver, xpaths["username"])
-    username.send_keys(credentials.get("username"))
-
-    # password = driver.find_element("xpath", xpaths["password"])
-    password = get_element(driver, xpaths["password"])
-    password.send_keys(credentials.get("password"))
-
-    # login = driver.find_element("xpath", xpaths["login"])
-    login = get_element(driver, xpaths["login"])
-    login.click()
-    time.sleep(0.5)
-
-    totp_token = TOTP(credentials.get("totp")).now()
-    time.sleep(3)
-    new_totp_token = TOTP(credentials.get("totp")).now()
-    if totp_token == new_totp_token:
-        totp_token = new_totp_token
-
-    # totp = driver.find_element("xpath", xpaths["totp"])
-    totp = get_element(driver, xpaths["totp"])
-    totp.send_keys(totp_token)
-    # click = driver.find_element("xpath", xpaths["click"])
-    click = get_element(driver, xpaths["click"])
-    click.click()
-    time.sleep(0.5)
-    i = 0
-    while i < 10:
-        try:
-            request_token = furl(
-                driver.current_url).args["request_token"].strip()
-            break
-        except Exception:
-            time.sleep(0.5)
-            i += 1
-
-    data = kite.generate_session(
-        request_token, api_secret=api_key.get("api_secret"))
-    kite.set_access_token(data["access_token"])
-    with open("access_token.txt", "w") as f:
-        json.dump(data['access_token'], f)
-    driver.close()
-    logger.info("Logged in successfully")
-    return data['access_token']
+# def login():
+#     if os.path.isfile("access_token.txt") and os.path.getmtime("access_token.txt") > time.time() - 3600:
+#         with open("access_token.txt", "r") as f:
+#             access_token = json.loads(f.read())
+#         return access_token
+#
+#     update_chromedriver(".", False)
+#     credentials = read_credentials()
+#     api_key = read_api_key()
+#
+#     kite = kiteconnect.KiteConnect(api_key=api_key.get("api_key"))
+#     options = ChromeOptions()
+#     # start headed browser
+#     # options.add_argument("--start-maximized")
+#     options.add_argument("--headless")
+#     options.add_argument("--log-level=NONE")
+#     driver = webdriver.Chrome(options=options)
+#     driver.maximize_window()
+#     driver.get(kite.login_url())
+#
+#     xpaths = {
+#         "username": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[1]/input",
+#         "password": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[2]/input",
+#         "login": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[4]/button",
+#         "totp": "/html/body/div[1]/div/div[2]/div[1]/div[2]/div/div[2]/form/div[1]/input",
+#         "click": "/html/body/div[1]/div/div[2]/div[1]/div[2]/div/div[2]/form/div[2]/button"
+#     }
+#
+#     # username = driver.find_element("xpath", xpaths["username"])
+#     username = get_element(driver, xpaths["username"])
+#     username.send_keys(credentials.get("username"))
+#
+#     # password = driver.find_element("xpath", xpaths["password"])
+#     password = get_element(driver, xpaths["password"])
+#     password.send_keys(credentials.get("password"))
+#
+#     # login = driver.find_element("xpath", xpaths["login"])
+#     login = get_element(driver, xpaths["login"])
+#     login.click()
+#     time.sleep(0.5)
+#
+#
+#     time.sleep(3)
+#
+#     # totp = driver.find_element("xpath", xpaths["totp"])
+#     totp = get_element(driver, xpaths["totp"])
+#     totp_token = TOTP(credentials.get("totp")).now()
+#     totp.send_keys(totp_token)
+#     # click = driver.find_element("xpath", xpaths["click"])
+#     click = get_element(driver, xpaths["click"])
+#     click.click()
+#     time.sleep(0.5)
+#     i = 0
+#     while i < 10:
+#         try:
+#             request_token = furl(
+#                 driver.current_url).args["request_token"].strip()
+#             break
+#         except Exception:
+#             time.sleep(0.5)
+#             i += 1
+#
+#     data = kite.generate_session(
+#         request_token, api_secret=api_key.get("api_secret"))
+#     kite.set_access_token(data["access_token"])
+#     with open("access_token.txt", "w") as f:
+#         json.dump(data['access_token'], f)
+#     driver.close()
+#     logger.info("Logged in successfully")
+#     return data['access_token']
 
 
 def get_quote(symbol):

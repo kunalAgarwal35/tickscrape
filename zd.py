@@ -57,6 +57,7 @@ file_handler = logging.FileHandler(os.path.join(
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
+
 def login():
     if os.path.isfile("access_token.txt") and os.path.getmtime("access_token.txt") > time.time() - 3600:
         with open("access_token.txt", "r") as f:
@@ -76,12 +77,13 @@ def login():
     driver = webdriver.Chrome(options=options)
     driver.maximize_window()
     driver.get(kite.login_url())
+
     xpaths = {
         "username": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[1]/input",
         "password": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[2]/input",
         "login": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[4]/button",
-        "totp": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[2]/input",
-        "click": "/html/body/div[1]/div/div[2]/div[1]/div/div/div[2]/form/div[3]/button"
+        "totp": "/html/body/div[1]/div/div[2]/div[1]/div[2]/div/div[2]/form/div[1]/input",
+        "click": "/html/body/div[1]/div/div[2]/div[1]/div[2]/div/div[2]/form/div[2]/button"
     }
 
     # username = driver.find_element("xpath", xpaths["username"])
@@ -97,14 +99,11 @@ def login():
     login.click()
     time.sleep(0.5)
 
-    totp_token = TOTP(credentials.get("totp")).now()
     time.sleep(3)
-    new_totp_token = TOTP(credentials.get("totp")).now()
-    if totp_token == new_totp_token:
-        totp_token = new_totp_token
 
     # totp = driver.find_element("xpath", xpaths["totp"])
     totp = get_element(driver, xpaths["totp"])
+    totp_token = TOTP(credentials.get("totp")).now()
     totp.send_keys(totp_token)
     # click = driver.find_element("xpath", xpaths["click"])
     click = get_element(driver, xpaths["click"])
