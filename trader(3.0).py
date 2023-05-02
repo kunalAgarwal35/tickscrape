@@ -315,10 +315,14 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
 
     options_dict = filter_options_by_price(kite, nifty_options_expiring_between(kite, exp_min_days, exp_max_days),
                                            min_buyprice, max_buyprice, min_sellprice, max_sellprice)
+
+
     if options_dict is not None:
         buy_options = options_dict['buy']
         sell_options = options_dict['sell']
         # get 3 options with lowest bid/ask spread
+        buy_options = [option for option in buy_options if option['bid_ask_spread'] > 0]
+        sell_options = [option for option in sell_options if option['bid_ask_spread'] > 0]
 
         buy_options.sort(key=lambda x: x['bid_ask_spread'])
         sell_options.sort(key=lambda x: x['bid_ask_spread'])
