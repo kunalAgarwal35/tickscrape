@@ -662,15 +662,21 @@ class Reporter():
         dataframe['Days to Expiry'] = [(x - datetime.datetime.now()).days for x in dataframe['Expiry']]
         dataframe = dataframe[dataframe['Days to Expiry'] > 0]
         # get max loss
-        dataframe['Max Loss'] = dataframe['Max Loss'].astype(float)
-        max_loss = int(dataframe['Max Loss'].sum())
-        min_days_to_expiry = dataframe['Days to Expiry'].min()
-        average_loss = int(dataframe['Max Loss'].mean())
+        if len(dataframe):
+            dataframe['Max Loss'] = dataframe['Max Loss'].astype(float)
+            max_loss = int(dataframe['Max Loss'].sum())
+            min_days_to_expiry = dataframe['Days to Expiry'].min()
+            average_loss = int(dataframe['Max Loss'].mean())
+        else:
+            max_loss = 0
+            average_loss = 0
+            min_days_to_expiry = 0
+
         return max_loss, average_loss, min_days_to_expiry
 
 
 if __name__ == '__main__':
-    reporter = Reporter()
+    self = Reporter()
     # reporter.tradesheet_to_positions()
     # reporter.update_expired_pnl()
     # reporter.update_pnl(reporter.get_prices_from_broker())

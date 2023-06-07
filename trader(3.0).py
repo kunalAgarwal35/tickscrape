@@ -470,6 +470,10 @@ def ledger_live_fixed_risk(max_loss, avg_max_loss_per_position, days_to_expiry, 
     if max_loss > max_loss_limit:
         return 0
     else:
+        if avg_max_loss_per_position == 0:
+            avg_max_loss_per_position = 75000
+        if days_to_expiry == 0:
+            days_to_expiry = 1
         spreads = int( max_loss / avg_max_loss_per_position)
         # how many positions can fit in 40% of the capital?
         positions_that_fit = int(max_loss_limit / avg_max_loss_per_position) - spreads
