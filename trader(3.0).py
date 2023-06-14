@@ -467,6 +467,11 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
         return False
 
 def ledger_live_fixed_risk(max_loss, avg_max_loss_per_position, days_to_expiry, max_loss_limit=750000, natd=4):
+    # remove sundays and saturdays
+    if days_to_expiry > 5:
+        nweeks = int(days_to_expiry / 7)
+        days_to_expiry = days_to_expiry - 2 * nweeks
+    # if max loss is greater than max loss limit, return 0
     if max_loss > max_loss_limit:
         return 0
     else:
