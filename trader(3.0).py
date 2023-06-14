@@ -467,7 +467,7 @@ def execute_orders(kite, multiplier, exp_min_days, exp_max_days, min_buyprice, m
         return False
 
 def ledger_live_fixed_risk(max_loss, avg_max_loss_per_position, days_to_expiry, max_loss_limit=750000, natd=4):
-    # remove sundays and saturdays
+    # remove sundays and saturdays, adding code so that github action will run
     if days_to_expiry > 5:
         nweeks = int(days_to_expiry / 7)
         days_to_expiry = days_to_expiry - 2 * nweeks
@@ -479,12 +479,14 @@ def ledger_live_fixed_risk(max_loss, avg_max_loss_per_position, days_to_expiry, 
             avg_max_loss_per_position = 75000
         if days_to_expiry == 0:
             days_to_expiry = 1
-        spreads = int( max_loss / avg_max_loss_per_position)
+        spreads = int(max_loss / avg_max_loss_per_position)
         # how many positions can fit in 40% of the capital?
         positions_that_fit = int(max_loss_limit / avg_max_loss_per_position) - spreads
         prob = min(1, positions_that_fit / (natd * days_to_expiry))
         # generate 1 with probability prob
         return np.random.choice([0, 1], p=[1 - prob, prob])
+
+
 
 def test_ledger_live_fixed_risk():
     max_loss = 400000
