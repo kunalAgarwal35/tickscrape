@@ -345,8 +345,21 @@ class Reporter():
         option_types = [item.split(' ')[4][-2:] for item in expired_instruments]
 
         # get option expiries by underlying expiry
-        prices = [self.option_expiry_from_underlying_expiry(closing_prices[closing_prices['date'] == expiries[i]][symbols[i]].values[0],option_types[i],strikes[i]) for i in range(len(expired_instruments))]
-        return dict(zip(expired_instruments,prices))
+
+        prices = []
+        for i in range(len(expired_instruments)):
+            # Filtering condition now includes the day before expiry
+            filtered_prices = closing_prices[(closing_prices['date'] >= expiries[i] - pd.Timedelta(days=1)) &
+                                             (closing_prices['date'] <= expiries[i])][symbols[i]].values
+            if len(filtered_prices) > 0:
+                # Get the last available price
+                prices.append(
+                    self.option_expiry_from_underlying_expiry(filtered_prices[-1], option_types[i], strikes[i]))
+            else:
+                prices.append(None)  # or any other value that indicates missing data
+                # return dict(zip(expired_instruments,prices))
+
+
 
     def update_expired_pnl(self):
         self.logger.info('Updating Booked pnl')
