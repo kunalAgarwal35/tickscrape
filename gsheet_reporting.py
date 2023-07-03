@@ -359,7 +359,7 @@ class Reporter():
             prices.append(
                 self.option_expiry_from_underlying_expiry(filtered_prices[-1], option_types[i], strikes[i]))
             # print(prices[-1])
-
+        return dict(zip(expired_instruments, prices))
 
 
 
