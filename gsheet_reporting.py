@@ -349,15 +349,15 @@ class Reporter():
         prices = []
         for i in range(len(expired_instruments)):
             # Filtering condition now includes the day before expiry
+
             filtered_prices = closing_prices[(closing_prices['date'] >= expiries[i] - pd.Timedelta(days=1)) &
                                              (closing_prices['date'] <= expiries[i])][symbols[i]].values
-            if len(filtered_prices) > 0:
+            print(expired_instruments[i])
                 # Get the last available price
-                prices.append(
-                    self.option_expiry_from_underlying_expiry(filtered_prices[-1], option_types[i], strikes[i]))
-            else:
-                prices.append(None)  # or any other value that indicates missing data
-                # return dict(zip(expired_instruments,prices))
+            prices.append(
+                self.option_expiry_from_underlying_expiry(filtered_prices[-1], option_types[i], strikes[i]))
+            print(prices[-1])
+
 
 
 
@@ -691,9 +691,9 @@ class Reporter():
 if __name__ == '__main__':
     self = Reporter()
     # reporter.tradesheet_to_positions()
-    # reporter.update_expired_pnl()
-    # reporter.update_pnl(reporter.get_prices_from_broker())
-    # reporter.update_live_sheet_pnl_from_positions()
+    self.update_expired_pnl()
+    self.update_pnl(self.get_prices_from_broker())
+    self.update_live_sheet_pnl_from_positions()
 
 
     # reporter.tradesheet_to_positions()
