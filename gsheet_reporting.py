@@ -258,7 +258,8 @@ class Reporter():
         tokens = {}
         try:
             all_instruments = [x for x in self.kite.instruments() if x['name'] in symbols and x['strike'] in strikes and x['expiry'] in expiries and x['instrument_type'] in option_types]
-        except:
+        except Exception as e:
+            print('APIError (prices): ', e)
             self.access_token = zd.login()
             self.kite = zd.kiteconnect.KiteConnect(api_key=self.api_key.get("api_key"), access_token=self.access_token)
             all_instruments = [x for x in self.kite.instruments() if x['name'] in symbols and x['strike'] in strikes and x['expiry'] in expiries and x['instrument_type'] in option_types]
@@ -353,11 +354,11 @@ class Reporter():
 
             filtered_prices = closing_prices[(closing_prices['date'] >= expiries[i] - pd.Timedelta(days=1)) &
                                              (closing_prices['date'] <= expiries[i])][symbols[i]].values
-            print(expired_instruments[i])
+            # print(expired_instruments[i])
                 # Get the last available price
             prices.append(
                 self.option_expiry_from_underlying_expiry(filtered_prices[-1], option_types[i], strikes[i]))
-            print(prices[-1])
+            # print(prices[-1])
 
 
 
