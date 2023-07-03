@@ -271,6 +271,7 @@ class Reporter():
         prices = {}
         for key, value in tokens.items():
             quote = self.kite.quote(value)[str(value)]
+            print(key, quote)
             # update with mark price if bids and asks are available
             if quote['buy_quantity'] > 0 and quote['sell_quantity'] > 0:
                 prices[key] = (quote['depth']['buy'][0]['price'] + quote['depth']['sell'][0]['price'])/2
