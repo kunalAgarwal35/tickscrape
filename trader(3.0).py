@@ -253,16 +253,33 @@ def filter_options_by_price(kite, options, min_buyprice, max_buyprice, min_sellp
         # add mark price as a key to the options dict
         # get quotes for all options
         options = [option for option in options if option['instrument_type'] == 'CE']
-        quotes = kite.quote(['NFO:' + option['tradingsymbol'] for option in options])
+        try:
+            quotes = kite.quote(['NFO:' + option['tradingsymbol'] for option in options])
+            key_is = 'symbol'
+        except:
+            # try to get quotes using instrument token
+            quotes = kite.quote([option['instrument_token'] for option in options])
+            key_is = 'instrument_token'
         sell_candidates, buy_candidates = [], []
         for option in options:
             # get mark price as average of best bid and best ask
-            best_bid = quotes['NFO:' + option['tradingsymbol']]['depth']['buy'][0]['price']
-            best_ask = quotes['NFO:' + option['tradingsymbol']]['depth']['sell'][0]['price']
+            if 'NFO:' + option['tradingsymbol'] not in quotes.keys() and option['instrument_token'] not in quotes.keys():
+                print("Could not retrieve quotes for {}".format(option['tradingsymbol']))
+                continue
+            if key_is == 'symbol':
+                best_bid = quotes['NFO:' + option['tradingsymbol']]['depth']['buy'][0]['price']
+                best_ask = quotes['NFO:' + option['tradingsymbol']]['depth']['sell'][0]['price']
+            else:
+                best_bid = quotes[option['instrument_token']]['depth']['buy'][0]['price']
+                best_ask = quotes[option['instrument_token']]['depth']['sell'][0]['price']
+
             mark_price = (best_bid + best_ask) / 2
             if not mark_price:
                 # get last traded price
-                mark_price = quotes['NFO:' + option['tradingsymbol']]['last_price']
+                if key_is == 'symbol':
+                    mark_price = quotes['NFO:' + option['tradingsymbol']]['last_price']
+                else:
+                    mark_price = quotes[option['instrument_token']]['last_price']
             option['mark_price'] = mark_price
             # add best bid and best ask to the option dict
             option['best_bid'] = best_bid
@@ -275,6 +292,7 @@ def filter_options_by_price(kite, options, min_buyprice, max_buyprice, min_sellp
             # check if mark price is between min_sellprice and max_sellprice
             if min_sellprice <= mark_price <= max_sellprice:
                 sell_candidates.append(option)
+
 
         logger.info("Options filtered by price successfully")
         return {'buy': buy_candidates, 'sell': sell_candidates}
