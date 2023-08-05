@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 import io
 import sys
+from bs4 import BeautifulSoup
 
 # Constants
 
@@ -39,24 +40,49 @@ def get_chromedriver_version() -> str:
         print(traceback.format_exc())
         return ''
 
+def get_chromedriver_link(version: str, version_number: str, platform: str, arch: str) -> str:
+    base_url = "https://googlechromelabs.github.io/chrome-for-testing/#stable"
+    response = requests.get(base_url)
+    soup = BeautifulSoup(response.content, 'html.parser')
 
-def get_chromedriver_link(version: str, system: str, arch: str) -> str:
-    """Get link of chromedriver from website"""
-    links = list()
-    link = 'https://chromedriver.storage.googleapis.com/'
-    root = ET.fromstring(
-        requests.get(link).content.decode('utf8')
-    )
-    for child in root:
-        for subchild in child:
-            if subchild.text.startswith(version):
-                if system in subchild.text:
-                    if arch in subchild.text:
-                        links.append(link+subchild.text) # link + subchild.text
-    if len(links) == 0:
-        return ''
-    else:
-        return links[-1]
+    # Find the section corresponding to the requested version (e.g., 'stable', 'beta', 'dev', 'canary')
+    version_section = soup.find(id=version.lower())
+    if not version_section:
+        raise ValueError(f"Version '{version}' not found on the page.")
+
+    # Find all rows in the table inside the version section
+    rows = version_section.find_all('tr')
+
+    # Iterate through the rows to find the correct download link
+    for row in rows:
+        columns = row.find_all('td')
+        if len(columns) >= 4:
+            binary, row_platform, url, http_status = columns[:4]
+            if platform in row_platform.get_text().lower() and arch in url.get_text().lower() and version_number in url.get_text() \
+                and 'chromedriver' in binary.get_text().lower():
+                return url.get_text()
+
+    raise ValueError(f"Download link not found for Version '{version}', Platform '{platform}', and Architecture '{arch}'.")
+
+
+
+# def get_chromedriver_link(version: str, system: str, arch: str) -> str:
+#     """Get link of chromedriver from website"""
+#     links = list()
+#     link = 'https://chromedriver.storage.googleapis.com/'
+#     root = ET.fromstring(
+#         requests.get(link).content.decode('utf8')
+#     )
+#     for child in root:
+#         for subchild in child:
+#             if subchild.text.startswith(version):
+#                 if system in subchild.text:
+#                     if arch in subchild.text:
+#                         links.append(link+subchild.text) # link + subchild.text
+#     if len(links) == 0:
+#         return ''
+#     else:
+#         return links[-1]
 
 def download_and_save_chromedriver(download_link: str, output_path: str) -> str:
     """Download chromedriver and save to given directory. Returns the path of chromedriver"""
@@ -108,7 +134,7 @@ def main(output_path = ".", force=False) -> bool:
         chromedriver_version = None
 
     platform, arch = get_platform_architecture()
-    link = get_chromedriver_link(major_version, platform, arch)
+    link = get_chromedriver_link("Stable", version, platform, arch)
     print("Downloading from:", link)
     if not link:
         raise Exception("Could not get the download link.")
