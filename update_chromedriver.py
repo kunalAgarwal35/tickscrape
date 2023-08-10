@@ -58,11 +58,11 @@ def get_chromedriver_link(version: str, version_number: str, platform: str, arch
         columns = row.find_all('td')
         if len(columns) >= 4:
             binary, row_platform, url, http_status = columns[:4]
-            if platform in row_platform.get_text().lower() and arch in url.get_text().lower() and version_number in url.get_text() \
+            if platform in row_platform.get_text().lower() and arch in url.get_text().lower() \
                 and 'chromedriver' in binary.get_text().lower():
                 return url.get_text()
 
-    raise ValueError(f"Download link not found for Version '{version}', Platform '{platform}', and Architecture '{arch}'.")
+    raise ValueError(f"Download link not found for Platform '{platform}', and Architecture '{arch}'.")
 
 
 
