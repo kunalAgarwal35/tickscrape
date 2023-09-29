@@ -10,7 +10,7 @@ import zipfile
 import io
 import sys
 from bs4 import BeautifulSoup
-
+import shutil
 # Constants
 
 digits_re = re.compile(r'\d+')
@@ -44,26 +44,17 @@ def get_chromedriver_link(version: str, version_number: str, platform: str, arch
     base_url = "https://googlechromelabs.github.io/chrome-for-testing/#stable"
     response = requests.get(base_url)
     soup = BeautifulSoup(response.content, 'html.parser')
+    url_pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+\.zip')
+    urls = re.findall(url_pattern, str(soup))
 
-    # Find the section corresponding to the requested version (e.g., 'stable', 'beta', 'dev', 'canary')
-    version_section = soup.find(id=version.lower())
-    if not version_section:
-        raise ValueError(f"Version '{version}' not found on the page.")
-
-    # Find all rows in the table inside the version section
-    rows = version_section.find_all('tr')
+    fname = 'chromedriver-' + platform + arch + '.zip'
 
     # Iterate through the rows to find the correct download link
-    for row in rows:
-        columns = row.find_all('td')
-        if len(columns) >= 4:
-            binary, row_platform, url, http_status = columns[:4]
-            if platform in row_platform.get_text().lower() and arch in url.get_text().lower() \
-                and 'chromedriver' in binary.get_text().lower():
-                return url.get_text()
+    for url in urls:
+        if fname in url and version_number in url:
+            return url
 
-    raise ValueError(f"Download link not found for Platform '{platform}', and Architecture '{arch}'.")
-
+    raise Exception("Could not get the download link.")
 
 
 # def get_chromedriver_link(version: str, system: str, arch: str) -> str:
@@ -87,16 +78,49 @@ def get_chromedriver_link(version: str, version_number: str, platform: str, arch
 def download_and_save_chromedriver(download_link: str, output_path: str) -> str:
     """Download chromedriver and save to given directory. Returns the path of chromedriver"""
     resp = requests.get(download_link)
-    if resp.headers.get("content-type") == 'application/zip':
-        with zipfile.ZipFile(io.BytesIO(resp.content)) as zip_file:
-            for zipinfo in zip_file.infolist():
-                if not os.path.isdir(output_path):
-                    os.makedirs(output_path)
-                zip_file.extract(zipinfo.filename, path=output_path)
-                if os.path.isfile((out:= os.path.join(output_path, zipinfo.filename))):
-                    return out
-    return ''
+    # Check if the request was successful
+    if resp.status_code != 200:
+        print(f"Failed to download from {download_link}. Status code: {resp.status_code}")
+        return ''
 
+    # Check if the content is a ZIP file
+    # if resp.headers.get("content-type") != 'application/zip':
+    #     print(f"Unexpected content type: {resp.headers.get('content-type')}")
+    #     return ''
+
+    # Ensure directory exists
+    if not os.path.isdir(output_path):
+        os.makedirs(output_path)
+
+    # Extract the ZIP content to a temporary folder
+    temp_folder = os.path.join(output_path, "temp_chromedriver_folder")
+    if not os.path.exists(temp_folder):
+        os.makedirs(temp_folder)
+
+    with zipfile.ZipFile(io.BytesIO(resp.content)) as zip_file:
+        zip_file.extractall(path=temp_folder)
+
+    # Find the subdirectory inside the temporary folder
+    subdirs = [d for d in os.listdir(temp_folder) if os.path.isdir(os.path.join(temp_folder, d))]
+    if not subdirs:
+        print("No subdirectory found inside the ZIP content.")
+        return ''
+    inner_folder = os.path.join(temp_folder, subdirs[0])
+
+    # Move chromedriver and license file to the desired output path
+    chromedriver_path_src = os.path.join(inner_folder, 'chromedriver.exe')
+    # license_path_src = os.path.join(inner_folder, 'LICENSE')
+
+    chromedriver_path_dest = os.path.join(output_path, 'chromedriver.exe')
+    # license_path_dest = os.path.join(output_path, 'LICENSE')
+
+    shutil.move(chromedriver_path_src, chromedriver_path_dest)
+    # shutil.move(license_path_src, license_path_dest)
+
+    # Remove the temporary folder
+    shutil.rmtree(temp_folder)
+
+    return chromedriver_path_dest
 
 def get_platform_architecture():
     """Get OS and CPU info"""
@@ -153,3 +177,4 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--force', action='store_true', default=False, help='Force update chromedriver')
     args = parser.parse_args()
     sys.exit(main(args.output, args.force))
+    import math
