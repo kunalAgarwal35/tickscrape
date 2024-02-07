@@ -40,6 +40,28 @@ def get_chromedriver_version() -> str:
         print(traceback.format_exc())
         return ''
 
+def extract_version_from_url_keep_decimals(url: str) -> str:
+    """
+    Extracts and returns the version number from a given URL as a string, keeping the decimal points.
+
+    Parameters:
+    - url (str): The URL string containing the version number.
+
+    Returns:
+    - str: The extracted version number as a string.
+    """
+    # Regular expression to match the version number pattern
+    version_pattern = re.compile(r'/(\d+\.\d+\.\d+\.\d+)/')
+
+    # Search for the version number pattern in the URL
+    match = version_pattern.search(url)
+    if match:
+        # Extract the version number string
+        return match.group(1)
+    else:
+        # If no version number found, return an empty string or an error indicator
+        return "Version not found"
+
 def get_chromedriver_link(version: str, version_number: str, platform: str, arch: str) -> str:
     base_url = "https://googlechromelabs.github.io/chrome-for-testing/#stable"
     response = requests.get(base_url)
@@ -52,6 +74,27 @@ def get_chromedriver_link(version: str, version_number: str, platform: str, arch
     # Iterate through the rows to find the correct download link
     for url in urls:
         if fname in url and version_number in url:
+            print(url)
+            return url
+    from distutils.version import LooseVersion
+    available_versions = [extract_version_from_url_keep_decimals(url) for url in urls if fname in url]
+    current_version_lv = LooseVersion(version_number)
+
+    closest_version = None
+    min_distance = None
+
+    for version in available_versions:
+        version_lv = LooseVersion(version)
+        # Calculate the "distance" based on comparison, not subtraction
+        distance = (version_lv > current_version_lv) - (version_lv < current_version_lv)
+
+        if closest_version is None or (0 <= distance < min_distance):
+            closest_version = version
+            min_distance = distance
+    print('Downloading the closest version:', closest_version)
+    for url in urls:
+        if fname in url and closest_version in url:
+            print(url)
             return url
 
     raise Exception("Could not get the download link.")
