@@ -238,3 +238,209 @@ def check_available_margin(kite):
         logger.error("Could not check available cash and margin: {}".format(traceback.format_exc()))
         return False
 
+
+def get_historical(instrument_token,fdate,tdate,interv,oi):
+    day1500=datetime.timedelta(days=1500)
+    day1=datetime.timedelta(days=1)
+    dateformat = '%Y-%m-%d'
+    filename=fdate.strftime(dateformat)+tdate.strftime(dateformat)+'('+str(instrument_token)+')'+interv+'.csv'
+    if filename in os.listdir('get_historical'):
+        df = pd.read_csv('get_historical/' + filename)
+        df['date'] = df[['date']].apply(pd.to_datetime)
+        return df
+    if interv == "day" and (tdate-fdate).days > 1500:
+        fdates=[fdate]
+        newtdate=fdate+day1500
+        tdates=[newtdate]
+
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day1500)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                         to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date']=[item.date() for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+        return df
+    day70 = datetime.timedelta(days=70)
+    day1 = datetime.timedelta(days=1)
+    if interv == '5minute':
+        fdates = [fdate]
+        newtdate = fdate + day70
+        tdates = [newtdate]
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day70)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                         to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date'] = [item.replace(tzinfo=None) for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+        return df
+    day50 = datetime.timedelta(days=55)
+    if interv == 'minute':
+        fdates = [fdate]
+        newtdate = fdate + day50
+        tdates = [newtdate]
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day50)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                         to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date'] = [item.replace(tzinfo=None) for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+    if interv == 'hour':
+        fdates = [fdate]
+        newtdate = fdate + day50
+        tdates = [newtdate]
+        while (tdate > newtdate):
+            newfdate = newtdate + day1
+            newtdate = min(tdate, newfdate + day50)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs = []
+        for i in range(0, len(fdates)):
+            dfs.append(pd.DataFrame(kite.historical_data(instrument_token, from_date=fdates[i].strftime(dateformat),
+                                                         to_date=tdates[i].strftime(dateformat), interval=interv,
+                                                         oi=oi)))
+        df = pd.concat(dfs, ignore_index=True)
+        df = df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date'] = [item.replace(tzinfo=None) for item in df['date'].to_list()]
+        df.to_csv('get_historical/' + filename, index=False)
+        return df
+
+def get_historical_force(instrument_token,fdate,tdate,interv,oi):
+    day1500=datetime.timedelta(days=1500)
+    day1=datetime.timedelta(days=1)
+    dateformat = '%Y-%m-%d'
+    filename=fdate.strftime(dateformat)+tdate.strftime(dateformat)+'('+str(instrument_token)+')'+interv+'.csv'
+    # if filename in os.listdir('get_historical'):
+    #     df = pd.read_csv('get_historical/' + filename)
+    #     df['date'] = df[['date']].apply(pd.to_datetime)
+    #     return df
+
+    if interv == "day" and (tdate-fdate).days > 1500:
+        fdates=[fdate]
+        newtdate=fdate+day1500
+        tdates=[newtdate]
+
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day1500)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                         to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date']=[item.date() for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+        return df
+    day70 = datetime.timedelta(days=70)
+    day1 = datetime.timedelta(days=1)
+    if interv == 'hour':
+        fdates = [fdate]
+        newtdate = fdate + day70
+        tdates = [newtdate]
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day70)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            try:
+                dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                             to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+            except:
+                continue
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date'] = [item.replace(tzinfo=None) for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+        return df
+    if interv == '5minute':
+        fdates = [fdate]
+        newtdate = fdate + day70
+        tdates = [newtdate]
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day70)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                         to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date'] = [item.replace(tzinfo=None) for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+        return df
+    day50 = datetime.timedelta(days=55)
+    if interv == 'minute':
+        fdates = [fdate]
+        newtdate = fdate + day50
+        tdates = [newtdate]
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day50)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                         to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date'] = [item.replace(tzinfo=None) for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+        return df
+    if interv == 'hour':
+        fdates = [fdate]
+        newtdate = fdate + day70
+        tdates = [newtdate]
+        while (tdate>newtdate):
+            newfdate=newtdate+day1
+            newtdate=min(tdate,newfdate+day70)
+            fdates.append(newfdate)
+            tdates.append(newtdate)
+        dfs=[]
+        for i in range(0,len(fdates)):
+            try:
+                dfs.append(pd.DataFrame(kite.historical_data(instrument_token,from_date=fdates[i].strftime(dateformat),
+                                                             to_date=tdates[i].strftime(dateformat), interval=interv, oi=oi)))
+            except:
+                continue
+        df=pd.concat(dfs,ignore_index=True)
+        df=df.reset_index(drop=True)
+        pd.to_datetime(df['date'])
+        df['date'] = [item.replace(tzinfo=None) for item in df['date'].to_list()]
+        df.to_csv('get_historical/'+filename,index=False)
+        return df
